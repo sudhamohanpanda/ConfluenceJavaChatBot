@@ -1,0 +1,194 @@
+<mxfile host="Electron" agent="GitHub Copilot" compressed="false" pages="2">
+  <diagram id="ingestion-flow" name="Ingestion Flow">
+    <mxGraphModel dx="1446" dy="994" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="u1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="User / Streamlit UI" vertex="1">
+          <mxGeometry height="60" width="190" x="40" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Ingestion API\nPOST /api/v1/ingestion" vertex="1">
+          <mxGeometry height="70" width="210" x="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="IngestionService" vertex="1">
+          <mxGeometry height="60" width="180" x="560" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="ConfluenceClientFactory" vertex="1">
+          <mxGeometry height="60" width="220" x="810" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="RestConfluenceClient" vertex="1">
+          <mxGeometry height="55" width="220" x="810" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="McpConfluenceClient" vertex="1">
+          <mxGeometry height="55" width="220" x="810" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="x1" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Confluence Cloud" vertex="1">
+          <mxGeometry height="110" width="210" x="1110" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="h1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="HtmlTextExtractor" vertex="1">
+          <mxGeometry height="55" width="180" x="560" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="TextChunker\n(10-line overlap)" vertex="1">
+          <mxGeometry height="65" width="180" x="560" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="EmbeddingService" vertex="1">
+          <mxGeometry height="55" width="180" x="560" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="o1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Ollama\nnomic-embed-text:latest" vertex="1">
+          <mxGeometry height="70" width="220" x="810" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="db1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="ChatbotRepository" vertex="1">
+          <mxGeometry height="55" width="180" x="560" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="pg1" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#fff2cc;strokeColor=#d6b656;size=15;" value="PostgreSQL + pgvector\n(chunk text + metadata + vector)" vertex="1">
+          <mxGeometry height="85" width="220" x="235" y="498" as="geometry" />
+        </mxCell>
+        <mxCell id="rep1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="IngestionReportService\n(per-page lines/chunks)" vertex="1">
+          <mxGeometry height="65" width="210" x="240" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="e-u-c" edge="1" parent="1" source="u1" style="endArrow=block;html=1;rounded=0;" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-c-s" edge="1" parent="1" source="c1" style="endArrow=block;html=1;rounded=0;" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-s-f" edge="1" parent="1" source="s1" style="endArrow=block;html=1;rounded=0;" target="f1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-f-r" edge="1" parent="1" source="f1" style="endArrow=block;html=1;rounded=0;" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-f-m" edge="1" parent="1" source="f1" style="endArrow=block;html=1;rounded=0;" target="m1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r-x" edge="1" parent="1" source="r1" style="endArrow=block;html=1;rounded=0;" target="x1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-m-x" edge="1" parent="1" source="m1" style="endArrow=block;html=1;rounded=0;" target="x1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-s-h" edge="1" parent="1" source="s1" style="endArrow=block;html=1;rounded=0;" target="h1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-h-t" edge="1" parent="1" source="h1" style="endArrow=block;html=1;rounded=0;" target="t1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-t-e" edge="1" parent="1" source="t1" style="endArrow=block;html=1;rounded=0;" target="e1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-e-o" edge="1" parent="1" source="e1" style="endArrow=block;html=1;rounded=0;" target="o1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-e-db" edge="1" parent="1" source="e1" style="endArrow=block;html=1;rounded=0;" target="db1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-db-pg" edge="1" parent="1" source="db1" style="endArrow=block;html=1;rounded=0;" target="pg1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-s-rep" edge="1" parent="1" source="s1" style="endArrow=block;html=1;rounded=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="rep1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="605" y="220" />
+              <mxPoint x="345" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-rep-pg" edge="1" parent="1" source="rep1" style="endArrow=block;html=1;rounded=0;" target="pg1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="search-chat-flow" name="Search and Chat Flow">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="u2" value="User / Streamlit UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="api2" value="Search API\nPOST /api/v1/search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="290" y="120" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="api3" value="Chat API\nPOST /api/v1/chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="290" y="260" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ss2" value="SearchService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="120" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="es2" value="EmbeddingService\n(query embedding)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="560" y="220" width="180" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="ollE" value="Ollama\nnomic-embed-text:latest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="810" y="220" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="repo2" value="ChatbotRepository" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="560" y="330" width="180" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pg2" value="PostgreSQL + pgvector\n(similarity search)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#fff2cc;strokeColor=#d6b656;size=15;" vertex="1" parent="1">
+          <mxGeometry x="810" y="320" width="230" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="result2" value="Top-K chunks\n+ source metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="120" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="chat2" value="ChatService\n(RAG orchestration)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="470" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="llm2" value="Spring AI ChatClient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="810" y="470" width="230" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ollL" value="Ollama\nqwen2.5:latest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="460" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="optOpenAI" value="Optional provider switch:\nOpenAI API" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="560" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ans2" value="Context-aware answer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="470" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-u-search" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="u2" target="api2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-u-chat" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="u2" target="api3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-api2-ss" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api2" target="ss2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-ss-es" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="ss2" target="es2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-es-olle" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="es2" target="ollE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-ss-repo" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="ss2" target="repo2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-repo-pg" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="repo2" target="pg2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-ss-result" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="ss2" target="result2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-api3-chat" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api3" target="chat2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-chat-ss" value="retrieve context" style="endArrow=block;html=1;rounded=0;dashed=1;" edge="1" parent="1" source="chat2" target="ss2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-chat-llm" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="chat2" target="llm2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-llm-oll" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="llm2" target="ollL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-opt-llm" style="endArrow=block;html=1;rounded=0;dashed=1;" edge="1" parent="1" source="optOpenAI" target="llm2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2-oll-ans" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="ollL" target="ans2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: ConfluenceJavaChatBot
+  datasource:
+    url: jdbc:postgresql://localhost:5432/confluence_chatbot
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+  ai:
+    ollama:
+      base-url: http://127.0.0.1:11434
+      chat:
+        options:
+          model: qwen2.5:latest
+      embedding:
+        options:
+          model: nomic-embed-text:latest
+
+server:
+  port: 8080
+
+app:
+  connector-default: REST
+  chunking:
+    lines-per-chunk: 30
+    overlap-lines: 5
+  ingestion:
+    max-pages: 5000
+    chunk-insert-batch-size: 100
+  confluence:
+    base-url: ""
+    username: ""
+    api-token: ""
+    space-key: ""
+  mcp:
+    base-url: ""
+    auth-token: ""

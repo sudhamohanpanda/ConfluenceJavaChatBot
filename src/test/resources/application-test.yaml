@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: never
+  ai:
+    ollama:
+      base-url: http://127.0.0.1:11434
+      chat:
+        options:
+          model: qwen2.5:latest
+      embedding:
+        options:
+          model: nomic-embed-text:latest
+
+app:
+  connector-default: REST
+  chunking:
+    lines-per-chunk: 30
+    overlap-lines: 5
+  ingestion:
+    max-pages: 1000
+    chunk-insert-batch-size: 50
+  confluence:
+    base-url: http://localhost
+    username: test
+    api-token: test
+    space-key: TEST
+  mcp:
+    base-url: http://localhost
+    auth-token: test
+
