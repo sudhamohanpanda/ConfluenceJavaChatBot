@@ -25,6 +25,9 @@ ollama pull qwen2.5:latest
 5. Run the Spring Boot application with the local profile:
 ```zsh
 ./mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd python-ui
+source .venv/bin/activate
+streamlit run app.py
 ```
 
 ## Local PostgreSQL + pgvector (Homebrew)

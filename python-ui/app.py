@@ -21,14 +21,16 @@ with st.sidebar:
     with st.expander("Start Ingestion", expanded=True):
         with st.form("ingest_form"):
             page_id = st.text_input("Root Page ID")
-            connector_mode = st.selectbox("Connector Mode", ["AUTO", "REST", "MCP"], index=1)
+            space_key = st.text_input("Space Key (optional)")
             ingest_submitted = st.form_submit_button("Start Ingestion")
 
         if ingest_submitted:
             if not page_id.strip():
                 st.error("Root Page ID is required.")
             else:
-                payload = {"pageId": page_id.strip(), "connectorMode": connector_mode}
+                payload = {"pageId": page_id.strip()}
+                if space_key.strip():
+                    payload["spaceKey"] = space_key.strip()
                 try:
                     resp = requests.post(f"{backend_url}/api/v1/ingestion", json=payload, timeout=600)
                     resp.raise_for_status()
@@ -80,4 +82,3 @@ if query:
     st.session_state.messages.append({"role": "assistant", "content": answer})
     with st.chat_message("assistant"):
         st.markdown(answer)
-
