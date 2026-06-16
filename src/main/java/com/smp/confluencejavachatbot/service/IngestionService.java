@@ -11,6 +11,7 @@ import com.smp.confluencejavachatbot.repository.ChatbotRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -45,10 +46,11 @@ public class IngestionService {
         this.chatbotRepository = chatbotRepository;
     }
 
-    public IngestionResponse ingest(String rootPageId, ConnectorMode connectorMode) {
+    public IngestionResponse ingest(String rootPageId, String spaceKey, ConnectorMode connectorMode) {
         ConfluenceClient client = confluenceClientFactory.resolveClient(connectorMode);
+        String resolvedRootPageId = resolveRootPageId(rootPageId, spaceKey, client);
         ConnectorMode resolvedMode = connectorMode == null ? ConnectorMode.AUTO : connectorMode;
-        long jobId = chatbotRepository.createIngestionJob(rootPageId, resolvedMode.name());
+        long jobId = chatbotRepository.createIngestionJob(resolvedRootPageId, resolvedMode.name());
         int maxPages = appProperties.ingestion() == null ? 5000 : appProperties.ingestion().maxPages();
         int chunkInsertBatchSize = appProperties.ingestion() == null ? 100 : appProperties.ingestion().chunkInsertBatchSize();
 
@@ -58,7 +60,7 @@ public class IngestionService {
         try {
             ArrayDeque<PageToVisit> queue = new ArrayDeque<>();
             Set<String> visited = new HashSet<>();
-            queue.add(new PageToVisit(rootPageId, null));
+            queue.add(new PageToVisit(resolvedRootPageId, null));
 
             while (!queue.isEmpty()) {
                 if (pagesProcessed >= maxPages) {
@@ -72,7 +74,7 @@ public class IngestionService {
 
                 ConfluencePageData page;
                 try {
-                    page = client.fetchPage(rootPageId, current.pageId(), current.parentPageId());
+                    page = client.fetchPage(resolvedRootPageId, current.pageId(), current.parentPageId());
                 } catch (Exception ex) {
                     if (isMissingPageError(ex)) {
                         logger.warn("Skipping page {} because it is missing or inaccessible: {}", current.pageId(), ex.getMessage());
@@ -120,6 +122,16 @@ public class IngestionService {
 
     public IngestionStatusResponse getStatus(long jobId) {
         return chatbotRepository.getIngestionStatus(jobId);
+    }
+
+    private String resolveRootPageId(String rootPageId, String spaceKey, ConfluenceClient client) {
+        if (StringUtils.hasText(rootPageId)) {
+            return rootPageId.trim();
+        }
+        if (!StringUtils.hasText(spaceKey)) {
+            throw new IllegalArgumentException("Either pageId or spaceKey is required");
+        }
+        return client.resolveRootPageIdBySpaceKey(spaceKey.trim());
     }
 
     private List<EmbeddedChunk> embedChunkWithFallback(TextChunker.Chunk chunk, int depth) {

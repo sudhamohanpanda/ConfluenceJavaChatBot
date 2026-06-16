@@ -103,6 +103,38 @@ public class RestConfluenceClient implements ConfluenceClient {
         );
     }
 
+    @Override
+    public String resolveRootPageIdBySpaceKey(String spaceKey) {
+        String baseUrl = require(properties.confluence().baseUrl(), "CONFLUENCE_BASE_URL");
+        if (!StringUtils.hasText(spaceKey)) {
+            throw new IllegalArgumentException("spaceKey is required");
+        }
+
+        Exception lastError = null;
+        for (String apiRoot : apiRoots(baseUrl)) {
+            String uri = UriComponentsBuilder
+                    .fromUriString(apiRoot + "/space/" + spaceKey)
+                    .queryParam("expand", "homepage")
+                    .build(true)
+                    .toUriString();
+            try {
+                JsonNode spaceNode = getWithAuth(uri);
+                String homepageId = extractHomepageId(spaceNode);
+                if (StringUtils.hasText(homepageId)) {
+                    return homepageId;
+                }
+            } catch (Exception ex) {
+                lastError = ex;
+                logger.warn("Failed to resolve root page for space {} using {}: {}", spaceKey, uri, ex.getMessage());
+            }
+        }
+
+        if (lastError != null) {
+            throw new IllegalStateException("Unable to resolve root page for spaceKey=" + spaceKey + ": " + lastError.getMessage(), lastError);
+        }
+        throw new IllegalStateException("Unable to resolve root page for spaceKey=" + spaceKey);
+    }
+
     private List<String> fetchChildPageIds(String baseUrl, String pageId) {
         Set<String> childPageIds = new LinkedHashSet<>();
 
@@ -256,6 +288,25 @@ public class RestConfluenceClient implements ConfluenceClient {
             return null;
         }
         return OffsetDateTime.parse(value);
+    }
+
+    private static String extractHomepageId(JsonNode spaceNode) {
+        if (spaceNode == null) {
+            return null;
+        }
+
+        String id = text(spaceNode.path("homepage"), "id");
+        if (StringUtils.hasText(id)) {
+            return id;
+        }
+
+        String expandableHomepage = text(spaceNode.path("_expandable"), "homepage");
+        if (!StringUtils.hasText(expandableHomepage)) {
+            return null;
+        }
+
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("/content/(\\d+)").matcher(expandableHomepage);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private static String require(String value, String key) {

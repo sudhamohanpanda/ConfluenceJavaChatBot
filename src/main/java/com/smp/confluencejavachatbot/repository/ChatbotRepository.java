@@ -185,6 +185,37 @@ public class ChatbotRepository {
         );
     }
 
+    public List<RootPageOption> listRootPageOptions() {
+        return jdbcTemplate.query(
+                """
+                SELECT cp.root_page_id,
+                       COALESCE(rp.title, MIN(cp.title)) AS title,
+                       MAX(cp.last_indexed_at) AS latest_indexed_at
+                  FROM chatbot.confluence_page cp
+                  LEFT JOIN chatbot.confluence_page rp ON rp.page_id = cp.root_page_id
+                 GROUP BY cp.root_page_id, rp.title
+                 ORDER BY latest_indexed_at DESC
+                """,
+                (rs, rowNum) -> new RootPageOption(
+                        rs.getString("root_page_id"),
+                        rs.getString("title")
+                )
+        );
+    }
+
+    public List<String> listSpaceKeys() {
+        return jdbcTemplate.queryForList(
+                """
+                SELECT DISTINCT space_key
+                  FROM chatbot.confluence_page
+                 WHERE space_key IS NOT NULL
+                   AND space_key <> ''
+                 ORDER BY space_key
+                """,
+                String.class
+        );
+    }
+
     public IngestionStatusResponse getIngestionStatus(long jobId) {
         return jdbcTemplate.queryForObject(
                 """
@@ -246,6 +277,9 @@ public class ChatbotRepository {
     }
 
     public record StoredPage(String pageId, String title, String textContent) {
+    }
+
+    public record RootPageOption(String rootPageId, String title) {
     }
 
     private RowMapper<IngestionStatusResponse> ingestionStatusRowMapper() {

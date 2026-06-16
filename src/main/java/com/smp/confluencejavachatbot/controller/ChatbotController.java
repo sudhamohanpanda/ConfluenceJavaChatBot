@@ -8,8 +8,8 @@ import com.smp.confluencejavachatbot.dto.IngestionResponse;
 import com.smp.confluencejavachatbot.dto.IngestionStatusResponse;
 import com.smp.confluencejavachatbot.dto.SearchRequest;
 import com.smp.confluencejavachatbot.dto.SearchResponse;
-import com.smp.confluencejavachatbot.dto.SearchSummaryResponse;
 import com.smp.confluencejavachatbot.service.ChatService;
+import com.smp.confluencejavachatbot.service.IngestionOptionsService;
 import com.smp.confluencejavachatbot.service.IngestionReportService;
 import com.smp.confluencejavachatbot.service.IngestionService;
 import com.smp.confluencejavachatbot.service.SearchService;
@@ -21,31 +21,41 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1")
 public class ChatbotController {
 
     private final IngestionService ingestionService;
+    private final IngestionOptionsService ingestionOptionsService;
     private final IngestionReportService ingestionReportService;
     private final SearchService searchService;
     private final ChatService chatService;
 
     public ChatbotController(IngestionService ingestionService,
+                             IngestionOptionsService ingestionOptionsService,
                              IngestionReportService ingestionReportService,
                              SearchService searchService,
                              ChatService chatService) {
         this.ingestionService = ingestionService;
+        this.ingestionOptionsService = ingestionOptionsService;
         this.ingestionReportService = ingestionReportService;
         this.searchService = searchService;
         this.chatService = chatService;
     }
 
+    @GetMapping("/ingestion/options")
+    public Map<String, Object> getIngestionOptions() {
+        return ingestionOptionsService.getOptions();
+    }
+
     @PostMapping("/ingestion")
     public IngestionResponse startIngestion(@RequestBody IngestionRequest request) {
-        if (request == null || !StringUtils.hasText(request.pageId())) {
-            throw new IllegalArgumentException("pageId is required");
+        if (request == null || (!StringUtils.hasText(request.pageId()) && !StringUtils.hasText(request.spaceKey()))) {
+            throw new IllegalArgumentException("Either pageId or spaceKey is required");
         }
-        return ingestionService.ingest(request.pageId(), request.connectorMode());
+        return ingestionService.ingest(request.pageId(), request.spaceKey(), request.connectorMode());
     }
 
     @GetMapping("/ingestion/{jobId}")
@@ -59,13 +69,16 @@ public class ChatbotController {
     }
 
     @PostMapping("/search")
-    public SearchSummaryResponse search(@RequestBody SearchRequest request) {
+    public SearchResponse search(@RequestBody SearchRequest request) {
         if (request == null || !StringUtils.hasText(request.query())) {
             throw new IllegalArgumentException("query is required");
         }
+        if (!StringUtils.hasText(request.rootPageId())) {
+            throw new IllegalArgumentException("rootPageId is required");
+        }
         SearchResponse rawResponse = searchService.search(request);
         String summary = chatService.summarizeSearchResults(request.query(), rawResponse.results());
-        return new SearchSummaryResponse(summary);
+        return new SearchResponse(rawResponse.query(), rawResponse.topK(), rawResponse.results(), summary);
     }
 
     @PostMapping("/chat")

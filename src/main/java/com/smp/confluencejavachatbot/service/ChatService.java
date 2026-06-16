@@ -41,6 +41,7 @@ public class ChatService {
         StringBuilder contextBuilder = new StringBuilder();
         for (SearchResultItem item : results) {
             contextBuilder.append("PageId: ").append(item.pageId()).append("\n");
+            contextBuilder.append("Source URL: ").append(item.sourceUrl()).append("\n");
             contextBuilder.append("Title: ").append(item.title()).append("\n");
             contextBuilder.append("Content: ").append(item.content()).append("\n\n");
         }
@@ -49,8 +50,8 @@ public class ChatService {
                 You are a concise RAG assistant.
                 Summarize the search results in 5 to 10 lines.
                 Keep it factual and only use provided context.
-                End with this exact phrase followed by the best page id: Extracted information from pageid
-                Mention the most relevant pageId explicitly.
+                End with this exact phrase followed by the best source URL: Extracted information from URL
+                Mention the most relevant source URL explicitly.
                 """;
 
         String userPrompt = """
