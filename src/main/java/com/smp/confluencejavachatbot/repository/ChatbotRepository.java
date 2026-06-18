@@ -131,41 +131,72 @@ public class ChatbotRepository {
         }
 
         upsertPage(pageData, textContent);
-        deleteChunksByPageId(pageData.pageId());
 
         if (chunks.isEmpty()) {
+            deleteChunksByPageId(pageData.pageId());
             return;
         }
 
         int effectiveBatchSize = Math.max(batchSize, 1);
         for (int offset = 0; offset < chunks.size(); offset += effectiveBatchSize) {
             int end = Math.min(offset + effectiveBatchSize, chunks.size());
-            List<Object[]> args = new ArrayList<>(end - offset);
             for (int i = offset; i < end; i++) {
                 TextChunker.Chunk chunk = chunks.get(i);
-                args.add(new Object[]{
-                        pageData.pageId(),
-                        pageData.rootPageId(),
-                        pageData.parentPageId(),
-                        pageData.title(),
-                        pageData.sourceUrl(),
-                        chunk.chunkIndex(),
-                        chunk.lineStart(),
-                        chunk.lineEnd(),
-                        chunk.content(),
-                        toVectorLiteral(embeddings.get(i))
-                });
+                upsertChunkByPageAndIndex(pageData, chunk, embeddings.get(i));
             }
-            jdbcTemplate.batchUpdate(
-                    """
-                    INSERT INTO chatbot.confluence_chunk(
-                        page_id, root_page_id, parent_page_id, title, source_url,
-                        chunk_index, line_start, line_end, content, embedding
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS vector))
-                    """,
-                    args
-            );
         }
+
+        // Delete stale trailing chunks when a page now has fewer chunks than before.
+        jdbcTemplate.update(
+                "DELETE FROM chatbot.confluence_chunk WHERE page_id=? AND chunk_index>=?",
+                pageData.pageId(),
+                chunks.size()
+        );
+    }
+
+    private void upsertChunkByPageAndIndex(ConfluencePageData pageData, TextChunker.Chunk chunk, float[] embedding) {
+        String vectorLiteral = toVectorLiteral(embedding);
+        int updated = jdbcTemplate.update(
+                """
+                UPDATE chatbot.confluence_chunk
+                   SET root_page_id=?, parent_page_id=?, title=?, source_url=?,
+                       line_start=?, line_end=?, content=?, embedding=CAST(? AS vector)
+                 WHERE page_id=? AND chunk_index=?
+                """,
+                pageData.rootPageId(),
+                pageData.parentPageId(),
+                pageData.title(),
+                pageData.sourceUrl(),
+                chunk.lineStart(),
+                chunk.lineEnd(),
+                chunk.content(),
+                vectorLiteral,
+                pageData.pageId(),
+                chunk.chunkIndex()
+        );
+
+        if (updated > 0) {
+            return;
+        }
+
+        jdbcTemplate.update(
+                """
+                INSERT INTO chatbot.confluence_chunk(
+                    page_id, root_page_id, parent_page_id, title, source_url,
+                    chunk_index, line_start, line_end, content, embedding
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS vector))
+                """,
+                pageData.pageId(),
+                pageData.rootPageId(),
+                pageData.parentPageId(),
+                pageData.title(),
+                pageData.sourceUrl(),
+                chunk.chunkIndex(),
+                chunk.lineStart(),
+                chunk.lineEnd(),
+                chunk.content(),
+                vectorLiteral
+        );
     }
 
     public List<StoredPage> listPagesByRootPageId(String rootPageId) {

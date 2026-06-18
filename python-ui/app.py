@@ -1,4 +1,3 @@
-import json
 import os
 import requests
 import streamlit as st
@@ -122,12 +121,31 @@ with st.sidebar:
 
 st.subheader("Chat")
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        if isinstance(msg["content"], dict):
-            st.code(json.dumps(msg["content"], indent=2), language="json")
-        else:
-            st.markdown(msg["content"])
+with st.container(height=480):
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            if isinstance(msg["content"], dict):
+                summary = msg["content"].get("summary", "")
+                references = msg["content"].get("reference", [])
+
+                st.markdown(f"**Summary**\n\n{summary}")
+
+                if references:
+                    st.markdown("**References**")
+                    for index, ref in enumerate(references, start=1):
+                        score = ref.get("similarityScore")
+                        if isinstance(score, (int, float)):
+                            score_text = f"{score:.4f}"
+                        else:
+                            score_text = str(score) if score is not None else "-"
+
+                        st.markdown(f"{index}. Similarity score: {score_text}")
+                        st.markdown(
+                            f"<div style='padding-left: 1rem; word-break: break-word;'>{ref.get('sourceUrl') or '-'}</div>",
+                            unsafe_allow_html=True
+                        )
+            else:
+                st.markdown(msg["content"])
 
 chat_root_options = (st.session_state.ingestion_options or {}).get("rootPages", [])
 if not chat_root_options:
@@ -144,6 +162,7 @@ with st.form("chat_form", clear_on_submit=True):
     else:
         chat_root_page = None
 
+    top_k = st.number_input("Number of results", min_value=1, max_value=10, value=5, step=1)
     query = st.text_input("Ask a question")
     send_query = st.form_submit_button("Send")
 
@@ -156,7 +175,7 @@ if send_query and query:
 
     payload = {
         "query": query,
-        "topK": 5,
+        "topK": int(top_k),
         "rootPageId": chat_root_page.get("rootPageId"),
     }
 

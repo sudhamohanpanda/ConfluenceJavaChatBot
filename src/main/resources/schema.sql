@@ -47,4 +47,5 @@ CREATE INDEX IF NOT EXISTS idx_page_page_id ON chatbot.confluence_page(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_root_page_id ON chatbot.confluence_page(root_page_id);
 CREATE INDEX IF NOT EXISTS idx_chunk_page_id ON chatbot.confluence_chunk(page_id);
 CREATE INDEX IF NOT EXISTS idx_chunk_root_page_id ON chatbot.confluence_chunk(root_page_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_chunk_page_chunk_index ON chatbot.confluence_chunk(page_id, chunk_index);
 

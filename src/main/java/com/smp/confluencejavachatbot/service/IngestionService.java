@@ -8,6 +8,8 @@ import com.smp.confluencejavachatbot.dto.ConnectorMode;
 import com.smp.confluencejavachatbot.dto.IngestionResponse;
 import com.smp.confluencejavachatbot.dto.IngestionStatusResponse;
 import com.smp.confluencejavachatbot.repository.ChatbotRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,19 +36,25 @@ public class IngestionService {
     private final TextChunker textChunker;
     private final EmbeddingService embeddingService;
     private final ChatbotRepository chatbotRepository;
+    private final TaskExecutor ingestionTaskExecutor;
+    private final Executor embeddingTaskExecutor;
 
     public IngestionService(ConfluenceClientFactory confluenceClientFactory,
                             AppProperties appProperties,
                             HtmlTextExtractor htmlTextExtractor,
                             TextChunker textChunker,
                             EmbeddingService embeddingService,
-                            ChatbotRepository chatbotRepository) {
+                            ChatbotRepository chatbotRepository,
+                            @Qualifier("ingestionTaskExecutor") TaskExecutor ingestionTaskExecutor,
+                            @Qualifier("embeddingTaskExecutor") Executor embeddingTaskExecutor) {
         this.confluenceClientFactory = confluenceClientFactory;
         this.appProperties = appProperties;
         this.htmlTextExtractor = htmlTextExtractor;
         this.textChunker = textChunker;
         this.embeddingService = embeddingService;
         this.chatbotRepository = chatbotRepository;
+        this.ingestionTaskExecutor = ingestionTaskExecutor;
+        this.embeddingTaskExecutor = embeddingTaskExecutor;
     }
 
     public IngestionResponse ingest(String rootPageId, String spaceKey, ConnectorMode connectorMode) {
@@ -51,6 +62,18 @@ public class IngestionService {
         String resolvedRootPageId = resolveRootPageId(rootPageId, spaceKey, client);
         ConnectorMode resolvedMode = connectorMode == null ? ConnectorMode.AUTO : connectorMode;
         long jobId = chatbotRepository.createIngestionJob(resolvedRootPageId, resolvedMode.name());
+
+        try {
+            ingestionTaskExecutor.execute(() -> runIngestionJob(jobId, resolvedRootPageId, client));
+        } catch (Exception ex) {
+            chatbotRepository.updateIngestionJobFailure(jobId, 0, 0, "Unable to schedule ingestion job: " + ex.getMessage());
+            return new IngestionResponse(jobId, "FAILED", 0, 0, "Ingestion failed to start: " + ex.getMessage());
+        }
+
+        return new IngestionResponse(jobId, "RUNNING", 0, 0, "Ingestion started");
+    }
+
+    private void runIngestionJob(long jobId, String resolvedRootPageId, ConfluenceClient client) {
         int maxPages = appProperties.ingestion() == null ? 5000 : appProperties.ingestion().maxPages();
         int chunkInsertBatchSize = appProperties.ingestion() == null ? 100 : appProperties.ingestion().chunkInsertBatchSize();
 
@@ -84,24 +107,16 @@ public class IngestionService {
                 }
                 String text = htmlTextExtractor.toText(page.htmlBody());
                 List<TextChunker.Chunk> chunks = textChunker.chunk(text);
-                List<TextChunker.Chunk> embeddedChunks = new ArrayList<>();
-                List<float[]> embeddings = new ArrayList<>();
-                for (TextChunker.Chunk chunk : chunks) {
-                    List<EmbeddedChunk> resolvedChunks = embedChunkWithFallback(chunk, 0);
-                    for (EmbeddedChunk resolvedChunk : resolvedChunks) {
-                        int chunkIndex = embeddedChunks.size();
-                        embeddedChunks.add(new TextChunker.Chunk(
-                                chunkIndex,
-                                resolvedChunk.chunk().lineStart(),
-                                resolvedChunk.chunk().lineEnd(),
-                                resolvedChunk.chunk().content()
-                        ));
-                        embeddings.add(resolvedChunk.embedding());
-                    }
-                }
+                EmbeddingBatchResult embeddingBatch = embedChunksConcurrently(chunks);
 
-                chatbotRepository.replacePageChunks(page, text, embeddedChunks, embeddings, chunkInsertBatchSize);
-                chunksCreated += embeddedChunks.size();
+                chatbotRepository.replacePageChunks(
+                        page,
+                        text,
+                        embeddingBatch.embeddedChunks(),
+                        embeddingBatch.embeddings(),
+                        chunkInsertBatchSize
+                );
+                chunksCreated += embeddingBatch.embeddedChunks().size();
 
                 for (String childPageId : page.childPageIds()) {
                     queue.add(new PageToVisit(childPageId, page.pageId()));
@@ -111,12 +126,8 @@ public class IngestionService {
             }
 
             chatbotRepository.updateIngestionJobSuccess(jobId, pagesProcessed, chunksCreated);
-            return new IngestionResponse(jobId, "COMPLETED", pagesProcessed, chunksCreated,
-                    "Ingestion completed successfully");
         } catch (Exception ex) {
             chatbotRepository.updateIngestionJobFailure(jobId, pagesProcessed, chunksCreated, ex.getMessage());
-            return new IngestionResponse(jobId, "FAILED", pagesProcessed, chunksCreated,
-                    "Ingestion failed: " + ex.getMessage());
         }
     }
 
@@ -153,6 +164,46 @@ public class IngestionService {
             }
             return resolved;
         }
+    }
+
+    private EmbeddingBatchResult embedChunksConcurrently(List<TextChunker.Chunk> chunks) {
+        if (chunks.isEmpty()) {
+            return new EmbeddingBatchResult(List.of(), List.of());
+        }
+
+        List<CompletableFuture<List<EmbeddedChunk>>> futures = new ArrayList<>(chunks.size());
+        for (TextChunker.Chunk chunk : chunks) {
+            futures.add(CompletableFuture.supplyAsync(() -> embedChunkWithFallback(chunk, 0), embeddingTaskExecutor));
+        }
+
+        List<TextChunker.Chunk> embeddedChunks = new ArrayList<>();
+        List<float[]> embeddings = new ArrayList<>();
+
+        for (CompletableFuture<List<EmbeddedChunk>> future : futures) {
+            List<EmbeddedChunk> resolvedChunks;
+            try {
+                resolvedChunks = future.join();
+            } catch (CompletionException ex) {
+                Throwable cause = ex.getCause();
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                throw ex;
+            }
+
+            for (EmbeddedChunk resolvedChunk : resolvedChunks) {
+                int chunkIndex = embeddedChunks.size();
+                embeddedChunks.add(new TextChunker.Chunk(
+                        chunkIndex,
+                        resolvedChunk.chunk().lineStart(),
+                        resolvedChunk.chunk().lineEnd(),
+                        resolvedChunk.chunk().content()
+                ));
+                embeddings.add(resolvedChunk.embedding());
+            }
+        }
+
+        return new EmbeddingBatchResult(embeddedChunks, embeddings);
     }
 
     private List<TextChunker.Chunk> splitChunkInHalf(TextChunker.Chunk chunk) {
@@ -227,6 +278,9 @@ public class IngestionService {
     }
 
     private record EmbeddedChunk(TextChunker.Chunk chunk, float[] embedding) {
+    }
+
+    private record EmbeddingBatchResult(List<TextChunker.Chunk> embeddedChunks, List<float[]> embeddings) {
     }
 
     private record PageToVisit(String pageId, String parentPageId) {
