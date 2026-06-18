@@ -12,9 +12,7 @@ import org.springframework.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Repository
 public class ChatbotRepository {
@@ -297,12 +295,17 @@ public class ChatbotRepository {
     }
 
     public static String toVectorLiteral(float[] vector) {
-        StringBuilder builder = new StringBuilder("[");
+        if (vector == null || vector.length == 0) {
+            throw new IllegalArgumentException("vector must not be null or empty");
+        }
+
+        StringBuilder builder = new StringBuilder(2 + vector.length * 10);
+        builder.append('[');
         for (int i = 0; i < vector.length; i++) {
             if (i > 0) {
                 builder.append(',');
             }
-            builder.append(String.format(Locale.US, "%f", vector[i]));
+            builder.append(Float.toString(vector[i]));
         }
         return builder.append(']').toString();
     }
