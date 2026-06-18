@@ -39,9 +39,15 @@ CREATE TABLE IF NOT EXISTS chatbot.confluence_chunk (
     line_start INTEGER NOT NULL,
     line_end INTEGER NOT NULL,
     content TEXT NOT NULL,
-    embedding vector NOT NULL,
+    embedding vector(768) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- HNSW requires a dimensioned vector column. Existing tables created with plain
+-- vector must be migrated before ANN index creation.
+ALTER TABLE chatbot.confluence_chunk
+    ALTER COLUMN embedding TYPE vector(768)
+    USING embedding::vector(768);
 
 CREATE INDEX IF NOT EXISTS idx_page_page_id ON chatbot.confluence_page(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_root_page_id ON chatbot.confluence_page(root_page_id);
