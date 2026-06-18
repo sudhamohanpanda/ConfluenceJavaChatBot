@@ -1,11 +1,9 @@
 package com.smp.confluencejavachatbot.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 public record IngestionReportResponse(
-        @JsonProperty("total_number_ofpage") int totalNumberOfPage,
+        int totalPages,
         List<PageLineReport> pages,
         String splitTechnique
 ) {

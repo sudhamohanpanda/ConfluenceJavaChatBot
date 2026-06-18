@@ -1,8 +1,8 @@
 package com.smp.confluencejavachatbot.dto;
 
 public record PageLineReport(
-        String pageID,
-        String pageName,
+        String pageId,
+        String pageTitle,
         int numberOfLines
 ) {
 }

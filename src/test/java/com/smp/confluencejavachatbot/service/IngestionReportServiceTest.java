@@ -34,8 +34,8 @@ class IngestionReportServiceTest {
         IngestionReportService service = new IngestionReportService(repository, new TextChunker(properties), properties);
         IngestionReportResponse response = service.buildReport("root-1");
 
-        assertEquals(2, response.totalNumberOfPage());
-        assertEquals("p1", response.pages().get(0).pageID());
+        assertEquals(2, response.totalPages());
+        assertEquals("p1", response.pages().get(0).pageId());
         assertEquals(3, response.pages().get(0).numberOfLines());
         assertEquals(1, response.pages().get(1).numberOfLines());
         assertTrue(response.splitTechnique().contains("lines-per-chunk=20"));
