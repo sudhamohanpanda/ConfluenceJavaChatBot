@@ -59,7 +59,7 @@ brew install pgvector
 After setting values, verify access to one page:
 
 ```zsh
-curl -u "sudha.mohan.panda@yourcomany.nl:<token>" \
+curl -u "<emailid>:<token>" \
 "https://confluence.dev.yourcomany.nl/rest/api/content/1373642445?expand=body.storage,version,space"
 ```
 
